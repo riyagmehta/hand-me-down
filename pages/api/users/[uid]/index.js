@@ -1,4 +1,5 @@
 import dbConnect from "../../../../lib/dbConnect";
+import requireAuth from "../../../../lib/requireAuth";
 import { getUserById } from "../../../../controllers/users/getUserById";
 import { updateUser } from "../../../../controllers/users/updateUser";
 
@@ -14,13 +15,12 @@ export default async function handler(req, res) {
 
 	switch (method) {
 		case "GET":
-			return getUserById(req, res);
-			return;
+			return requireAuth(getUserById)(req, res);
 			break;
 		case "POST":
 			break;
 		case "PUT":
-			return updateUser(req, res);
+			return requireAuth(updateUser)(req, res);
 			break;
 	}
 }

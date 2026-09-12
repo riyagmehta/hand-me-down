@@ -1,4 +1,5 @@
 import dbConnect from "../../../../../lib/dbConnect";
+import requireAuth from "../../../../../lib/requireAuth";
 import { getWishList } from "../../../../../controllers/users/wishlist/getWishlist";
 
 export default async function handler(req, res) {
@@ -7,7 +8,7 @@ export default async function handler(req, res) {
 
 	switch (method) {
 		case "GET":
-			return getWishList(req, res);
+			return requireAuth(getWishList)(req, res);
 			break;
 		case "POST":
 			break;

@@ -15,6 +15,12 @@ const INVALID_CREDENTIALS_ERROR =
 	"Invalid combination of email and password credentials";
 const INVALID_CREDENTIALS_ERROR_CODE = 403;
 
+const UNAUTHENTICATED_ERROR = "Authentication required";
+const UNAUTHENTICATED_ERROR_CODE = 401;
+
+const FORBIDDEN_ERROR = "You do not have permission to do that";
+const FORBIDDEN_ERROR_CODE = 403;
+
 module.exports = {
 	NO_EMAIL,
 	NO_UID,
@@ -28,4 +34,8 @@ module.exports = {
 	INTERNAL_SERVER_ERROR_CODE,
 	INVALID_CREDENTIALS_ERROR,
 	INVALID_CREDENTIALS_ERROR_CODE,
+	UNAUTHENTICATED_ERROR,
+	UNAUTHENTICATED_ERROR_CODE,
+	FORBIDDEN_ERROR,
+	FORBIDDEN_ERROR_CODE,
 };
