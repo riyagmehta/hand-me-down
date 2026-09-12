@@ -17,11 +17,19 @@ const UserSchema = mongoose.Schema({
 	dateOfBirth: { type: String },
 
 	// contact information
-	email: { type: String, default: "" },
+	email: { type: String, default: "", unique: true },
 	phoneNumber: { type: String, default: "" },
 	avatarURL: { type: String, default: "" },
 	// credential
 	password: { type: String, required: true, select: false },
+
+	// school-verified identity
+	emailVerified: { type: Boolean, default: false },
+	// The year this student graduates (or graduated). Class standing
+	// (freshman/junior/senior/etc) is deliberately not stored -- it's
+	// derived from this plus the current date in lib/academic.js, so it
+	// can't go stale the way a stored label would.
+	graduationYear: { type: Number },
 
 	// address
 	address: {

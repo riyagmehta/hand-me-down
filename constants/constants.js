@@ -1,10 +1,3 @@
-const NO_EMAIL = "No email provided";
-const NO_UID = "No user id provided";
-const DUPLICATE_STUDENT = "Student is already registed";
-const DUPLICATE_ADMIN = "Adming is already registed";
-const NO_PASSWORD = "No pasword is provided";
-const WRONG_CREDENTIALS = "Wrong credentials";
-
 const INVALID_REQUEST_DATA = "Invalid request data";
 const INVALID_REQUEST_DATA_CODE = 400;
 
@@ -24,13 +17,21 @@ const FORBIDDEN_ERROR_CODE = 403;
 const INSUFFICIENT_STOCK_ERROR = "Not enough stock available";
 const INSUFFICIENT_STOCK_ERROR_CODE = 409;
 
+const EMAIL_DOMAIN_NOT_ALLOWED =
+	"Registration is restricted to approved school email domains";
+const EMAIL_DOMAIN_NOT_ALLOWED_CODE = 400;
+
+const EMAIL_ALREADY_REGISTERED = "An account with this email already exists";
+const EMAIL_ALREADY_REGISTERED_CODE = 409;
+
+const EMAIL_NOT_VERIFIED =
+	"Please verify your email before logging in";
+const EMAIL_NOT_VERIFIED_CODE = 403;
+
+const INVALID_OR_EXPIRED_CODE = "Invalid or expired verification code";
+const INVALID_OR_EXPIRED_CODE_CODE = 400;
+
 module.exports = {
-	NO_EMAIL,
-	NO_UID,
-	DUPLICATE_STUDENT,
-	DUPLICATE_ADMIN,
-	NO_PASSWORD,
-	WRONG_CREDENTIALS,
 	INVALID_REQUEST_DATA,
 	INVALID_REQUEST_DATA_CODE,
 	INTERNAL_SERVER_ERROR,
@@ -43,4 +44,12 @@ module.exports = {
 	FORBIDDEN_ERROR_CODE,
 	INSUFFICIENT_STOCK_ERROR,
 	INSUFFICIENT_STOCK_ERROR_CODE,
+	EMAIL_DOMAIN_NOT_ALLOWED,
+	EMAIL_DOMAIN_NOT_ALLOWED_CODE,
+	EMAIL_ALREADY_REGISTERED,
+	EMAIL_ALREADY_REGISTERED_CODE,
+	EMAIL_NOT_VERIFIED,
+	EMAIL_NOT_VERIFIED_CODE,
+	INVALID_OR_EXPIRED_CODE,
+	INVALID_OR_EXPIRED_CODE_CODE,
 };

@@ -5,6 +5,8 @@ const {
 	INTERNAL_SERVER_ERROR_CODE,
 	INVALID_REQUEST_DATA,
 	INVALID_REQUEST_DATA_CODE,
+	EMAIL_NOT_VERIFIED,
+	EMAIL_NOT_VERIFIED_CODE,
 } = require("../../constants/constants");
 const { logger } = require("../../debugger/logger");
 const userModel = require("../../models/user.model");
@@ -43,6 +45,14 @@ const loginUser = async (req, res) => {
 				msg: INVALID_CREDENTIALS_ERROR,
 			});
 		}
+
+		if (!foundUser.emailVerified) {
+			return res.status(EMAIL_NOT_VERIFIED_CODE).json({
+				success: false,
+				msg: EMAIL_NOT_VERIFIED,
+			});
+		}
+
 		const JWT_SECRETS = process.env.JWT_SECRETS;
 
 		if (!JWT_SECRETS) {
