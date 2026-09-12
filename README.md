@@ -33,6 +33,9 @@ Copy `.env.example` to `.env.local` and fill in:
 - `ALLOWED_EMAIL_DOMAINS` -- comma-separated school email domains allowed to
   register (defaults to the placeholder `example.edu`; set this to your
   real school's domain(s)).
+- `CRON_SECRET` -- checked against the `Authorization` header on the daily
+  listing-archive job; Vercel sends this header automatically on its own
+  Cron triggers once this env var is set on the project.
 
 ```bash
 npm test         # run the test suite (jest --runInBand)
@@ -125,6 +128,35 @@ decremented it before this.
   rolled back rather than leaving stock permanently short.
 - `GET /api/orders` (buyer or seller) backs a `/orders` page showing
   purchase and sale history with a cancel action.
+
+### Semester-aware listings, bundles, and textbooks
+
+- Listings carry `status` (`active`/`archived`) and an optional
+  `listingExpiresAt` (a move-out window). A daily Vercel Cron job
+  (`GET /api/cron/archive-expired-listings`, authorized by `CRON_SECRET`
+  rather than a logged-in user) bulk-archives anything past its expiry.
+  Browsing filters on `status` independently of whether the cron has run
+  recently, so a missed/delayed run means at most ~24h of staleness, not
+  broken browsing -- an explicit, accepted tradeoff of free-tier cron
+  granularity.
+- `textbookDetails` (isbn/title/author/edition/courseCode) auto-fills from
+  Open Library's free Books API on ISBN entry; `courseCode` stays manual.
+  Same best-effort pattern as geocoding -- a failed lookup falls back to
+  whatever the seller typed rather than blocking the listing.
+- **Bundles** (`models/bundle.model.js`) reference existing `Product` docs
+  rather than duplicating their data, which makes buying one a genuine
+  multi-document consistency problem: reserving stock across N separate
+  products as one unit of work. This is implemented as a **saga** --
+  the same atomic per-document conditional decrement as single-item
+  checkout, applied to each bundle item in sequence, with an explicit
+  compensating rollback if a later item is out of stock or order creation
+  fails. (A native MongoDB multi-document transaction was the first
+  attempt -- Atlas's free M0 tier supports these since it's a replica set
+  -- but hit a reproducible Jest/driver incompatibility in replica-set
+  mode; the saga is also the more portable choice regardless, since it
+  works on any MongoDB deployment, not only ones provisioned as a replica
+  set.) A product locks out of individual sale while bundled
+  (`Product.bundledIn`), checked in the single-item checkout path too.
 
 ### Tests
 
