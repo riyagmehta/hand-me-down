@@ -23,14 +23,14 @@ describe("getProductsWithFilter", () => {
 			name: "Active Desk",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "active",
 		});
 		await productModel.create({
 			name: "Archived Chair",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "archived",
 		});
 

@@ -21,7 +21,7 @@ describe("wishlist ownership", () => {
 			name: "Jacket",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "1 St",
+			pickupBuildingId: "north-hall",
 		});
 
 		const req = httpMocks.createRequest({
@@ -63,7 +63,7 @@ describe("wishlist ownership", () => {
 			name: "Shoes",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "1 St",
+			pickupBuildingId: "north-hall",
 		});
 		const victim = await userModel.create({
 			email: "victim3@example.com",

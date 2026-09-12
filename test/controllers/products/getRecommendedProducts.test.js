@@ -30,14 +30,14 @@ describe("getRecommendedProducts", () => {
 			name: "CS Textbook",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			textbookDetails: { courseCode: "CS 301" },
 		});
 		await productModel.create({
 			name: "Random Lamp",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 
 		const res = await callGetRecommended(viewer._id.toString());
@@ -52,7 +52,7 @@ describe("getRecommendedProducts", () => {
 			name: "My Own Item",
 			seller: viewer._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 
 		const res = await callGetRecommended(viewer._id.toString());
@@ -68,7 +68,7 @@ describe("getRecommendedProducts", () => {
 			name: "Bundled Desk",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 		await productModel.updateOne(
 			{ _id: bundledItem._id },
@@ -88,7 +88,7 @@ describe("getRecommendedProducts", () => {
 			name: "Generic Item",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 
 		const res = await callGetRecommended(viewer._id.toString());

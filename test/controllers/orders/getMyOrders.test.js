@@ -20,7 +20,7 @@ async function placeTestOrder(sellerId, buyerId) {
 		price: 50,
 		counts: 5,
 		condition: "good",
-		pickupAddress: "1 St",
+		pickupBuildingId: "north-hall",
 	});
 	const req = httpMocks.createRequest({
 		method: "POST",

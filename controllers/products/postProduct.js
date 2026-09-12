@@ -6,7 +6,6 @@ const { logger } = require("../../debugger/logger");
 const productModel = require("../../models/product.model");
 import formidable from "formidable";
 import { uploadFileToCDN } from "../../lib/cloudinary";
-import { geocodeToGeoJSON } from "../../lib/geocode";
 import { lookupTextbookByISBN } from "../../lib/textbookLookup";
 
 const formidableConfig = {
@@ -51,12 +50,10 @@ const postProduct = async (req, res) => {
 				description,
 				categories,
 				condition,
-				pickupAddress,
+				pickupBuildingId,
 				listingExpiresAt,
 				textbookDetails,
 			} = productJSON;
-
-			const location = await geocodeToGeoJSON(pickupAddress);
 
 			let resolvedTextbookDetails;
 			if (textbookDetails?.isbn) {
@@ -79,8 +76,7 @@ const postProduct = async (req, res) => {
 				description,
 				categories,
 				condition,
-				pickupAddress,
-				location,
+				pickupBuildingId,
 				listingExpiresAt,
 				textbookDetails: resolvedTextbookDetails,
 				productImages: productImagesURLs,

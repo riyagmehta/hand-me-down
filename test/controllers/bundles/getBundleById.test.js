@@ -22,13 +22,13 @@ describe("getBundleById", () => {
 			name: "Desk",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 		const item2 = await productModel.create({
 			name: "Chair",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 		});
 		const createReq = httpMocks.createRequest({
 			method: "POST",

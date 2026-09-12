@@ -37,7 +37,7 @@ describe("archiveExpiredListings", () => {
 			name: "Expired Desk",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "active",
 			listingExpiresAt: new Date(Date.now() - 1000),
 		});
@@ -45,7 +45,7 @@ describe("archiveExpiredListings", () => {
 			name: "Still Valid Chair",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "active",
 			listingExpiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
 		});
@@ -53,7 +53,7 @@ describe("archiveExpiredListings", () => {
 			name: "Already Archived Lamp",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "archived",
 			listingExpiresAt: new Date(Date.now() - 1000),
 		});
@@ -61,7 +61,7 @@ describe("archiveExpiredListings", () => {
 			name: "No Expiry Set Rug",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "Hall A",
+			pickupBuildingId: "north-hall",
 			status: "active",
 		});
 

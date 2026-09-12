@@ -18,7 +18,7 @@ async function makeBundle(sellerId, itemCounts) {
 				name: `Item ${i}`,
 				seller: sellerId,
 				condition: "good",
-				pickupAddress: "Hall A",
+				pickupBuildingId: "north-hall",
 				counts,
 			})
 		)

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { CAMPUS_BUILDING_IDS } = require("../constants/campusBuildings");
 
 const AddressSchema = mongoose.Schema({
 	city: { type: String, default: "" },
@@ -32,6 +33,9 @@ const UserSchema = mongoose.Schema({
 	graduationYear: { type: Number },
 	major: { type: String },
 	courses: [String],
+	// Default building for "items near my dorm" -- optional, overridable
+	// per search.
+	dormBuildingId: { type: String, enum: CAMPUS_BUILDING_IDS },
 
 	// address
 	address: {

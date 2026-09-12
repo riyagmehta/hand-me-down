@@ -9,10 +9,20 @@ import { Carousel } from "react-responsive-carousel";
 import { useRouter } from "next/router";
 import { ToastContainer, toast } from "react-toastify";
 import { AiOutlineMail, AiOutlinePhone, AiOutlineUser } from "react-icons/ai";
+import { CAMPUS_BUILDINGS } from "../../constants/campusBuildings";
+import { suggestMeetupBuilding } from "../../lib/campusMeetup";
+
+const campusBuildingName = (buildingId) =>
+	CAMPUS_BUILDINGS.find((building) => building.id === buildingId)?.name || "Unknown";
+
 const ProductView = (props) => {
 	const [product, setProduct] = useState(props.product);
 	const [seller, setSeller] = useState(props.seller);
 	const [token, setToken] = useState();
+	const [myBuildingId, setMyBuildingId] = useState("");
+	const meetupSuggestion = myBuildingId
+		? suggestMeetupBuilding(myBuildingId, product.pickupBuildingId)
+		: null;
 	console.log("seller >> ", props.seller);
 
 	useEffect(() => {
@@ -85,18 +95,29 @@ const ProductView = (props) => {
 						<span className="font-semibold">Price :</span> {product.price}
 					</p>
 					<p>
-						<span className="font-semibold">Address :</span>
-						{product.pickupAddress}
+						<span className="font-semibold">Pickup building :</span>{" "}
+						{campusBuildingName(product.pickupBuildingId)}
 					</p>
-					<p>
-						<a
-							href={`https://www.google.com/maps/search/${product.pickupAddress}`}
-							className="bg-blue-500 text-white  hover:bg-blue-400 px-4 py-2 "
-							target="_blank"
+					<div className="flex flex-col gap-2">
+						<span className="font-semibold">Suggest a meetup point:</span>
+						<select
+							className="outline-none px-2 py-1 border-[1px] border-black w-64"
+							value={myBuildingId}
+							onChange={(e) => setMyBuildingId(e.target.value)}
 						>
-							View On Map
-						</a>
-					</p>
+							<option value="">Select your building...</option>
+							{CAMPUS_BUILDINGS.map((building) => (
+								<option key={building.id} value={building.id}>
+									{building.name}
+								</option>
+							))}
+						</select>
+						{meetupSuggestion && (
+							<p>
+								Suggested meetup: <strong>{meetupSuggestion.name}</strong>
+							</p>
+						)}
+					</div>
 					<div>
 						<p className="font-semibold">Categories :</p>
 						<div className="flex flex-row gap-2 my-2">

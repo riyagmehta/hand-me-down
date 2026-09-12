@@ -25,7 +25,7 @@ async function makeProduct(sellerId, counts) {
 		price: 50,
 		counts,
 		condition: "good",
-		pickupAddress: "1 St",
+		pickupBuildingId: "north-hall",
 	});
 }
 

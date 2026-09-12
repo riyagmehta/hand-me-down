@@ -14,7 +14,7 @@ async function makeProduct(sellerId, extra = {}) {
 		name: "Item",
 		seller: sellerId,
 		condition: "good",
-		pickupAddress: "Hall A",
+		pickupBuildingId: "north-hall",
 		...extra,
 	});
 }

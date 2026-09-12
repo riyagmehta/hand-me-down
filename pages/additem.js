@@ -15,6 +15,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import axiosInstance from "../axios/axios-instance";
 import verifyJWT from "../lib/verifyJWT";
+import { CAMPUS_BUILDINGS } from "../constants/campusBuildings";
 
 const AddItem = (props) => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -190,13 +191,21 @@ const AddItem = (props) => {
 						</select>
 					</div>
 
-					<FormInputField
-						name={"pickupAddress"}
-						errors={errors}
-						register={register}
-						isRequired={true}
-						title={"Pickup address"}
-					/>
+					<div className="flex flex-col gap-1 w-full">
+						<span className="font-semibold">Pickup building *</span>
+						<select
+							className="outline-none px-4 py-1 border-[1px] border-black"
+							{...register("pickupBuildingId", {
+								required: "Pickup building is required",
+							})}
+						>
+							{CAMPUS_BUILDINGS.map((building) => (
+								<option key={building.id} value={building.id}>
+									{building.name}
+								</option>
+							))}
+						</select>
+					</div>
 
 					<div className="flex flex-col gap-1 w-full">
 						<span className="font-semibold">

@@ -15,13 +15,13 @@ async function makeBundle(sellerId) {
 		name: "Item 1",
 		seller: sellerId,
 		condition: "good",
-		pickupAddress: "Hall A",
+		pickupBuildingId: "north-hall",
 	});
 	const item2 = await productModel.create({
 		name: "Item 2",
 		seller: sellerId,
 		condition: "good",
-		pickupAddress: "Hall A",
+		pickupBuildingId: "north-hall",
 	});
 
 	const req = httpMocks.createRequest({

@@ -109,6 +109,7 @@ const Navbar = ({ focusOn }) => {
 						<AiOutlineHeart className="text-2xl" />
 					</div>
 				</Link>
+				<MenuItem focusOn={focusOn} href={"/nearby"} title={"Near My Dorm"} name="nearby" />
 				{user.name ? (
 					<>
 						<MenuItem

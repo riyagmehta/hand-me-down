@@ -5,9 +5,6 @@ const userModel = require("../../../models/user.model");
 const productModel = require("../../../models/product.model");
 const { postProduct } = require("../../../controllers/products/postProduct");
 
-jest.mock("../../../lib/geocode");
-const { geocodeToGeoJSON } = require("../../../lib/geocode");
-
 jest.mock("../../../lib/textbookLookup");
 const { lookupTextbookByISBN } = require("../../../lib/textbookLookup");
 
@@ -16,7 +13,6 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-	geocodeToGeoJSON.mockResolvedValue({ type: "Point", coordinates: [77.5946, 12.9716] });
 	lookupTextbookByISBN.mockReset();
 });
 
@@ -62,7 +58,7 @@ describe("postProduct", () => {
 			{
 				name: "Bike",
 				condition: "good",
-				pickupAddress: "1 Main St",
+				pickupBuildingId: "north-hall",
 				seller: impersonatedSeller._id.toString(),
 			},
 			realSeller._id.toString()
@@ -73,31 +69,16 @@ describe("postProduct", () => {
 		expect(saved.seller.toString()).toBe(realSeller._id.toString());
 	});
 
-	it("stores the geocoded location for the pickup address", async () => {
-		const seller = await userModel.create({ email: "geo-seller@example.com", password: "x" });
+	it("stores the selected campus building", async () => {
+		const seller = await userModel.create({ email: "building-seller@example.com", password: "x" });
 
 		await postProductWithFields(
-			{ name: "Desk", condition: "good", pickupAddress: "MG Road, Bangalore" },
+			{ name: "Desk", condition: "good", pickupBuildingId: "library" },
 			seller._id.toString()
 		);
 
-		expect(geocodeToGeoJSON).toHaveBeenCalledWith("MG Road, Bangalore");
 		const saved = await productModel.findOne({ name: "Desk" });
-		expect(saved.location.coordinates).toEqual([77.5946, 12.9716]);
-	});
-
-	it("still saves the product when geocoding fails to resolve an address", async () => {
-		geocodeToGeoJSON.mockResolvedValue(undefined);
-		const seller = await userModel.create({ email: "geo-fail@example.com", password: "x" });
-
-		const res = await postProductWithFields(
-			{ name: "Chair", condition: "good", pickupAddress: "somewhere unresolvable" },
-			seller._id.toString()
-		);
-
-		expect(res.statusCode).toBe(200);
-		const saved = await productModel.findOne({ name: "Chair" });
-		expect(saved.location).toBeUndefined();
+		expect(saved.pickupBuildingId).toBe("library");
 	});
 
 	it("auto-fills textbook title/author from an ISBN lookup", async () => {
@@ -113,7 +94,7 @@ describe("postProduct", () => {
 			{
 				name: "CS textbook",
 				condition: "good",
-				pickupAddress: "1 Main St",
+				pickupBuildingId: "north-hall",
 				textbookDetails: { isbn: "9780132350884", courseCode: "CS 101" },
 			},
 			seller._id.toString()
@@ -134,7 +115,7 @@ describe("postProduct", () => {
 			{
 				name: "Obscure textbook",
 				condition: "good",
-				pickupAddress: "1 Main St",
+				pickupBuildingId: "north-hall",
 				textbookDetails: {
 					isbn: "0000000000",
 					title: "Manually Entered Title",
@@ -153,7 +134,7 @@ describe("postProduct", () => {
 		const seller = await userModel.create({ email: "no-textbook@example.com", password: "x" });
 
 		await postProductWithFields(
-			{ name: "Dorm Lamp", condition: "good", pickupAddress: "1 Main St" },
+			{ name: "Dorm Lamp", condition: "good", pickupBuildingId: "north-hall" },
 			seller._id.toString()
 		);
 

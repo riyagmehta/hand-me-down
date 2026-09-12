@@ -1,6 +1,7 @@
 import { getCookie, getCookies } from "cookies-next";
 import axiosInstance from "../axios/axios-instance";
 import verifyJWT from "../lib/verifyJWT";
+import { CAMPUS_BUILDINGS } from "../constants/campusBuildings";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { useDropzone } from "react-dropzone";
@@ -229,6 +230,21 @@ const Profile = (props) => {
 							register={register}
 							title={"Courses (comma-separated, e.g. CS 301, MATH 201)"}
 						/>
+
+						<div className="flex flex-col gap-1 w-full">
+							<span className="font-semibold">Your dorm/building</span>
+							<select
+								className="outline-none px-4 py-1 border-[1px] border-black"
+								{...register("dormBuildingId")}
+							>
+								<option value="">Not set</option>
+								{CAMPUS_BUILDINGS.map((building) => (
+									<option key={building.id} value={building.id}>
+										{building.name}
+									</option>
+								))}
+							</select>
+						</div>
 
 						<button
 							type="submit"

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { CAMPUS_BUILDING_IDS } = require("../constants/campusBuildings");
 
 const ProductSchema = mongoose.Schema({
 	name: { type: String, required: true },
@@ -14,20 +15,13 @@ const ProductSchema = mongoose.Schema({
 		enum: ["very-good", "good", "average", "poor"],
 		required: true,
 	},
-	pickupAddress: { type: String, required: true },
-	// Best-effort geocode of pickupAddress -- a real subdocument (not a plain
-	// nested object) so it stays genuinely absent when geocoding failed or
-	// hasn't run yet, instead of materializing as {}. GeoJSON coordinate
-	// order is [lng, lat].
-	location: {
-		type: new mongoose.Schema(
-			{
-				type: { type: String, enum: ["Point"] },
-				coordinates: { type: [Number] },
-			},
-			{ _id: false }
-		),
-		required: false,
+	// A fixed campus building, not a free-text address -- see
+	// constants/campusBuildings.js. "Near my dorm" is an exact match on
+	// this field; no geocoding or geospatial index needed for that.
+	pickupBuildingId: {
+		type: String,
+		enum: CAMPUS_BUILDING_IDS,
+		required: true,
 	},
 
 	// Semester-cycle-aware listings
@@ -57,7 +51,7 @@ const ProductSchema = mongoose.Schema({
 	},
 });
 
-ProductSchema.index({ location: "2dsphere" });
+ProductSchema.index({ pickupBuildingId: 1 });
 
 module.exports =
 	mongoose.models.products || mongoose.model("products", ProductSchema);

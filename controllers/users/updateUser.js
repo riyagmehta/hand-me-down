@@ -69,6 +69,7 @@ const updateUser = async (req, res) => {
 			graduationYear,
 			major,
 			courses,
+			dormBuildingId,
 		} = userData;
 
 		try {
@@ -87,6 +88,7 @@ const updateUser = async (req, res) => {
 					graduationYear,
 					major,
 					courses,
+					dormBuildingId,
 				},
 				{ new: true }
 			);

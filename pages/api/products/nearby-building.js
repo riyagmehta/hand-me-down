@@ -1,5 +1,5 @@
 import dbConnect from "../../../lib/dbConnect";
-import { getNearbyProducts } from "../../../controllers/products/getNearbyProducts";
+import { getProductsByBuilding } from "../../../controllers/products/getProductsByBuilding";
 
 export default async function handler(req, res) {
 	const { method } = req;
@@ -7,7 +7,7 @@ export default async function handler(req, res) {
 
 	switch (method) {
 		case "GET":
-			return getNearbyProducts(req, res);
+			return getProductsByBuilding(req, res);
 			break;
 	}
 }

@@ -18,7 +18,7 @@ describe("getProductById", () => {
 			name: "Old Textbook",
 			seller: seller._id,
 			condition: "good",
-			pickupAddress: "123 Main St",
+			pickupBuildingId: "north-hall",
 		});
 
 		const req = httpMocks.createRequest({
