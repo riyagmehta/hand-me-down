@@ -90,6 +90,15 @@ decremented it before this.
 - Tested against a real in-memory MongoDB with actual concurrent
   requests (`Promise.all`, not mocked timing) for both the oversell case
   and the shared-idempotency-key case.
+- Orders can be cancelled (`PUT /api/orders/:oid/cancel`, either party --
+  buyer or seller) which restocks the product. The status flip
+  (`"placed"` -> `"cancelled"`) is itself an atomic conditional update
+  filtered on `status: "placed"`, so two concurrent cancel attempts on
+  the same order can't both succeed -- same pattern as the stock
+  decrement. If the restock fails after the flip, the cancellation is
+  rolled back rather than leaving stock permanently short.
+- `GET /api/orders` (buyer or seller) backs a `/orders` page showing
+  purchase and sale history with a cancel action.
 
 ### Tests
 
