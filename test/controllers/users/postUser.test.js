@@ -27,6 +27,23 @@ describe("postUser", () => {
 		);
 	});
 
+	it("ignores client-supplied fields outside the registration allow-list", async () => {
+		const req = httpMocks.createRequest({
+			method: "POST",
+			body: {
+				email: "mass-assignment@example.com",
+				password: "hunter22",
+				wishlist: ["000000000000000000000000"],
+			},
+		});
+		const res = httpMocks.createResponse();
+
+		await postUser(req, res);
+
+		const saved = await userModel.findOne({ email: "mass-assignment@example.com" });
+		expect(saved.wishlist).toHaveLength(0);
+	});
+
 	it("never returns the password hash in the response body", async () => {
 		const req = httpMocks.createRequest({
 			method: "POST",

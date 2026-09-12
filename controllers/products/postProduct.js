@@ -42,10 +42,26 @@ const postProduct = async (req, res) => {
 			}
 
 			const productJSON = JSON.parse(product);
+			const {
+				name,
+				price,
+				counts,
+				description,
+				categories,
+				condition,
+				pickupAddress,
+			} = productJSON;
 
 			const newProduct = productModel({
-				...productJSON,
+				name,
+				price,
+				counts,
+				description,
+				categories,
+				condition,
+				pickupAddress,
 				productImages: productImagesURLs,
+				seller: req.user.uid,
 			});
 
 			newProduct

@@ -17,8 +17,29 @@ const postUser = async (req, res) => {
 	}
 
 	try {
+		const {
+			firstName,
+			middleName,
+			lastName,
+			dateOfBirth,
+			email,
+			phoneNumber,
+			address,
+			social,
+		} = req.body;
+
 		const hashedPassword = await bcrypt.hash(req.body.password, 12);
-		const newUser = userModel({ ...req.body, password: hashedPassword });
+		const newUser = userModel({
+			firstName,
+			middleName,
+			lastName,
+			dateOfBirth,
+			email,
+			phoneNumber,
+			address,
+			social,
+			password: hashedPassword,
+		});
 
 		return newUser
 			.save()
