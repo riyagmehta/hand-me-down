@@ -23,7 +23,8 @@ const postUser = async (req, res) => {
 		return newUser
 			.save()
 			.then((savedUser) => {
-				return res.json({ success: true, data: savedUser });
+				const { password, ...userWithoutPassword } = savedUser.toObject();
+				return res.json({ success: true, data: userWithoutPassword });
 			})
 			.catch((err) => {
 				logger("error", __filename, "while saving", err);

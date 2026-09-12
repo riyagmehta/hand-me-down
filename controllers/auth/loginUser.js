@@ -30,7 +30,7 @@ const loginUser = async (req, res) => {
 	}
 
 	try {
-		const foundUser = await userModel.findOne({ email: email });
+		const foundUser = await userModel.findOne({ email: email }).select("+password");
 
 		const passwordMatches = await bcrypt.compare(
 			password,

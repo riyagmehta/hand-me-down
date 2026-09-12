@@ -18,11 +18,26 @@ describe("postUser", () => {
 
 		await postUser(req, res);
 
-		const saved = await userModel.findOne({ email: "a@example.com" });
+		const saved = await userModel
+			.findOne({ email: "a@example.com" })
+			.select("+password");
 		expect(saved.password).not.toBe("correct horse battery staple");
 		expect(await bcrypt.compare("correct horse battery staple", saved.password)).toBe(
 			true
 		);
+	});
+
+	it("never returns the password hash in the response body", async () => {
+		const req = httpMocks.createRequest({
+			method: "POST",
+			body: { email: "hash-leak@example.com", password: "hunter22" },
+		});
+		const res = httpMocks.createResponse();
+
+		await postUser(req, res);
+
+		const body = res._getJSONData();
+		expect(body.data.password).toBeUndefined();
 	});
 
 	it("rejects registration with no password instead of crashing", async () => {

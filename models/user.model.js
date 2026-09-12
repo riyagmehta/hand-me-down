@@ -21,7 +21,7 @@ const UserSchema = mongoose.Schema({
 	phoneNumber: { type: String, default: "" },
 	avatarURL: { type: String, default: "" },
 	// credential
-	password: { type: String, required: true },
+	password: { type: String, required: true, select: false },
 
 	// address
 	address: {
