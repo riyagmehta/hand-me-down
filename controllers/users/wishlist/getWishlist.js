@@ -1,4 +1,3 @@
-const { default: mongoose } = require("mongoose");
 const {
 	INVALID_REQUEST_DATA_CODE,
 	INVALID_REQUEST_DATA,
@@ -10,13 +9,7 @@ const productModel = require("../../../models/product.model");
 const { logger } = require("../../../debugger/logger");
 
 const getWishList = async (req, res) => {
-	const { uid } = req.query;
-
-	if (!mongoose.isValidObjectId(uid))
-		return res.status(INVALID_REQUEST_DATA_CODE).json({
-			success: false,
-			msg: INVALID_REQUEST_DATA,
-		});
+	const { uid } = req.user;
 
 	try {
 		const foundUser = await userModel.findOne({ _id: uid });

@@ -30,7 +30,7 @@ const updateProduct = async (req, res) => {
 
 	try {
 		const updatedProduct = await productModel.findOneAndUpdate(
-			{ _id: pid },
+			{ _id: pid, seller: req.user.uid },
 			{
 				name,
 				price,

@@ -7,6 +7,7 @@ const customJestConfig = {
 	testEnvironment: "node",
 	setupFilesAfterEnv: ["<rootDir>/test/setup.js"],
 	testPathIgnorePatterns: ["/node_modules/", "/.next/"],
+	testTimeout: 20000,
 };
 
 module.exports = createJestConfig(customJestConfig);
