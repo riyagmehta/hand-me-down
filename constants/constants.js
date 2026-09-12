@@ -21,6 +21,9 @@ const UNAUTHENTICATED_ERROR_CODE = 401;
 const FORBIDDEN_ERROR = "You do not have permission to do that";
 const FORBIDDEN_ERROR_CODE = 403;
 
+const INSUFFICIENT_STOCK_ERROR = "Not enough stock available";
+const INSUFFICIENT_STOCK_ERROR_CODE = 409;
+
 module.exports = {
 	NO_EMAIL,
 	NO_UID,
@@ -38,4 +41,6 @@ module.exports = {
 	UNAUTHENTICATED_ERROR_CODE,
 	FORBIDDEN_ERROR,
 	FORBIDDEN_ERROR_CODE,
+	INSUFFICIENT_STOCK_ERROR,
+	INSUFFICIENT_STOCK_ERROR_CODE,
 };
