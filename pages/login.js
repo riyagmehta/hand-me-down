@@ -11,6 +11,8 @@ import { useRouter } from "next/router";
 import Error from "../components/Error";
 import Link from "next/link";
 import Navbar from "../components/Navbar";
+import { EMAIL_NOT_VERIFIED } from "../constants/constants";
+
 const Login = () => {
 	const {
 		handleSubmit,
@@ -20,6 +22,7 @@ const Login = () => {
 	} = useForm({});
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
+	const [needsVerification, setNeedsVerification] = useState(false);
 
 	const handleLogin = () => {
 		setIsLoading(true);
@@ -34,6 +37,9 @@ const Login = () => {
 			.then((data) => {
 				if (data.success === false) {
 					toast.error(data.msg);
+					if (data.msg === EMAIL_NOT_VERIFIED) {
+						setNeedsVerification(true);
+					}
 					return;
 				} else {
 					router.push("/");
@@ -113,6 +119,18 @@ const Login = () => {
 									</span>
 								</button>
 							</form>
+							{needsVerification && (
+								<div className="text-center pb-4">
+									<Link
+										href={`/verify-email?email=${encodeURIComponent(
+											getValues("email") || ""
+										)}`}
+										className="font-semibold underline text-blue-600"
+									>
+										Verify your email
+									</Link>
+								</div>
+							)}
 							<div className=" pb-12 text-center">
 								<p>
 									Don&#x27;t have an account ?
