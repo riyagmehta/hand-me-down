@@ -49,6 +49,8 @@ const loginUser = async (req, res) => {
 			throw new Error("Please define the JWT_SECRETS environment variable");
 		}
 
+		const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
+
 		const signedToken = jwt.sign({ uid: foundUser._id }, JWT_SECRETS, {
 			expiresIn: "7d",
 		});
@@ -56,22 +58,29 @@ const loginUser = async (req, res) => {
 		setCookie("token", signedToken, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
+		// Not httpOnly: read client-side by lib/getUser.js to show the
+		// signed-in user's name in the nav without a round trip. Contains
+		// no sensitive data.
 		setCookie("email", foundUser.email, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
 		setCookie("name", foundUser.firstName, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
 		return res.json({

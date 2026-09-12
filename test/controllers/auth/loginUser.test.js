@@ -35,6 +35,24 @@ describe("loginUser", () => {
 		expect(() => jwt.verify(token, "test-jwt-secret")).not.toThrow();
 	});
 
+	it("sets the token cookie as httpOnly but leaves the display cookies readable client-side", async () => {
+		await registerUser("cookie-flags@example.com", "hunter22");
+
+		const req = httpMocks.createRequest({
+			method: "POST",
+			body: { email: "cookie-flags@example.com", password: "hunter22" },
+		});
+		const res = httpMocks.createResponse();
+
+		await loginUser(req, res);
+
+		const setCookieHeaders = res.getHeader("Set-Cookie");
+		const tokenCookie = setCookieHeaders.find((c) => c.startsWith("token="));
+		const emailCookie = setCookieHeaders.find((c) => c.startsWith("email="));
+		expect(tokenCookie.toLowerCase()).toMatch(/httponly/);
+		expect(emailCookie.toLowerCase()).not.toMatch(/httponly/);
+	});
+
 	it("rejects the wrong password", async () => {
 		await registerUser("d@example.com", "correctpassword");
 
