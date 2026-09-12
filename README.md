@@ -1,7 +1,9 @@
 # Hand Me Down
 
-A secondhand marketplace where users list and browse used items (books,
-household goods, etc.) for local pickup, with per-user wishlists.
+A campus marketplace: graduating seniors offload textbooks, dorm
+furniture, and electronics to incoming juniors/underclassmen at the same
+school. Registration is restricted to a school's email domain, and
+listings are matched to students by shared major/courses.
 
 Live: https://hand-me-down-chi.vercel.app/
 
@@ -28,6 +30,9 @@ Copy `.env.example` to `.env.local` and fill in:
 - `CDN_CLOUD_NAME` / `CDN_API_KEY` / `CDN_API_SECRET` -- a Cloudinary account
   (used for product/avatar image uploads).
 - `JWT_SECRETS` -- any long random string used to sign auth tokens.
+- `ALLOWED_EMAIL_DOMAINS` -- comma-separated school email domains allowed to
+  register (defaults to the placeholder `example.edu`; set this to your
+  real school's domain(s)).
 
 ```bash
 npm test         # run the test suite (jest --runInBand)
@@ -64,6 +69,27 @@ or repository layer -- controllers are the business logic layer.
   httpOnly and unreadable by browser JS by design.
 - Logout (`POST /api/auth/logout`) clears all three auth cookies
   server-side; a client can't clear an httpOnly cookie itself.
+
+### School-verified identity
+
+Layers on top of the auth above rather than replacing it -- password/JWT
+mechanics are unchanged; this gates account *usability* in front of them.
+
+- Registration checks the email's domain against `ALLOWED_EMAIL_DOMAINS`
+  (`lib/emailAllowlist.js`) before creating the account.
+- A 6-digit code is generated, hashed (like a password, not stored in
+  plaintext), and kept in its own `emailVerifications` collection rather
+  than on `User` -- keeps transient signup-flow state out of the core
+  entity and makes resends (new code, old one invalidated) clean.
+- `lib/mailer.js` simulates delivery (logs the code) rather than sending a
+  real email -- real delivery needs new infra (an SMTP account or email
+  API) that wasn't in scope; swappable behind the same function signature.
+- Login rejects a correct password for an unverified account.
+- `graduationYear` is stored on `User`; class standing
+  (freshman/junior/senior/etc) is deliberately *not* stored alongside it --
+  `lib/academic.js` derives it from `graduationYear` and the current date
+  on every read, so it can't drift the way a saved label would once a new
+  term starts.
 
 ### Checkout and inventory
 
