@@ -171,6 +171,30 @@ infrastructure to build and keep in sync. A viewer with no major/courses
 set, or a listing with no course code, degenerates gracefully to a
 senior-boosted recency feed rather than scoring everything zero.
 
+### Campus-level location
+
+Listings pick a building from a fixed list (`constants/campusBuildings.js`
+-- a placeholder "Example University" set; swap in your real school's
+buildings/dorms) instead of a free-text address geocoded live. This is a
+stricter free-tier posture than even rate-limited geocoding: building
+coordinates are a one-time hardcoded fixture, so there are zero external
+location requests at all, ever.
+
+- "Near my dorm" (`GET /api/products/nearby-building`) is a plain indexed
+  equality match on `pickupBuildingId` -- no geospatial index or query
+  needed for an exact-match problem.
+- Meetup-point suggestion (`lib/campusMeetup.js`) reuses the same
+  great-circle midpoint math from `lib/geo.js` against building
+  coordinates, then snaps the result to the *nearest real building* in the
+  fixed list -- "meet at the Student Union," not a bare coordinate.
+  Computed client-side (pure math, no server round trip) once both
+  parties' buildings are known.
+- An earlier iteration of this same idea used live Nominatim geocoding of
+  free-text addresses with a 2dsphere/`$nearSphere` radius search; that
+  code (`lib/geocode.js`, `GET /api/products/nearby`) was removed once
+  every listing had a fixed building instead, rather than left as dead,
+  unreachable code.
+
 ### Tests
 
 Controller tests spin up a real in-memory MongoDB per test file
