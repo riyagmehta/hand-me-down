@@ -113,6 +113,13 @@ const Navbar = ({ focusOn }) => {
 					<>
 						<MenuItem
 							focusOn={focusOn}
+							href={"/orders"}
+							title={"Orders"}
+							name="orders"
+						/>
+
+						<MenuItem
+							focusOn={focusOn}
 							href={"/profile"}
 							title={user.name + "'s Profile"}
 							name="profile"
