@@ -46,6 +46,28 @@ const ProductView = (props) => {
 		}
 	};
 
+	const handleBuyNow = async () => {
+		if (!token || !token.uid) {
+			router.push("/login");
+			return;
+		}
+		try {
+			const idempotencyKey = window.crypto.randomUUID();
+			const { data } = await axiosInstance.post("/api/orders", {
+				pid: product._id,
+				quantity: 1,
+				idempotencyKey,
+			});
+
+			if (data.success === true) {
+				toast.success("Order placed!");
+				setProduct((prev) => ({ ...prev, counts: prev.counts - 1 }));
+			}
+		} catch (err) {
+			toast.error(err.response?.data?.msg || "Could not place order");
+		}
+	};
+
 	return (
 		<>
 			<Navbar />
@@ -105,13 +127,25 @@ const ProductView = (props) => {
 							<a href={`mailto:${seller.email}`}>{seller.email}</a>
 						</div>
 					</div>
-					<button
-						type="button"
-						onClick={handleAddToWishList}
-						className="px-4 py-2 uppercase font-semibold bg-blue-500 text-white  hover:bg-blue-400 transition-all duration-500  rounded-2"
-					>
-						Add To Wishlist
-					</button>
+					<div className="flex flex-row gap-3">
+						{token && token.uid !== product.seller && (
+							<button
+								type="button"
+								onClick={handleBuyNow}
+								disabled={product.counts < 1}
+								className="px-4 py-2 uppercase font-semibold bg-green-600 text-white hover:bg-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-500 rounded-2"
+							>
+								{product.counts < 1 ? "Sold Out" : "Buy Now"}
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={handleAddToWishList}
+							className="px-4 py-2 uppercase font-semibold bg-blue-500 text-white  hover:bg-blue-400 transition-all duration-500  rounded-2"
+						>
+							Add To Wishlist
+						</button>
+					</div>
 				</div>
 				<div className="md:w-1/2">
 					{product.productImages.length > 0 && (
