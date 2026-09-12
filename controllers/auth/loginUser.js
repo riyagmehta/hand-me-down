@@ -5,12 +5,21 @@ const {
 	INTERNAL_SERVER_ERROR_CODE,
 	INVALID_REQUEST_DATA,
 	INVALID_REQUEST_DATA_CODE,
+	EMAIL_NOT_VERIFIED,
+	EMAIL_NOT_VERIFIED_CODE,
 } = require("../../constants/constants");
 const { logger } = require("../../debugger/logger");
 const userModel = require("../../models/user.model");
 
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { setCookie, getCookies, getCookie } from "cookies-next";
+
+// A precomputed bcrypt hash with no matching plaintext, compared against
+// when no user is found so lookup and mismatch take the same time and
+// the response can't be used to enumerate registered emails.
+const DUMMY_HASH =
+	"$2a$12$CwTycUXWue0Thq9StjUM0uJ8Q5NRRoc2fnpwvuk1J8xUMBrKAI9se";
 
 const loginUser = async (req, res) => {
 	const { email, password } = req.body;
@@ -23,41 +32,65 @@ const loginUser = async (req, res) => {
 	}
 
 	try {
-		const foundUser = await userModel.findOne({
-			email: email,
-			password: password,
-		});
+		const foundUser = await userModel.findOne({ email: email }).select("+password");
 
-		if (!foundUser) {
+		const passwordMatches = await bcrypt.compare(
+			password,
+			foundUser ? foundUser.password : DUMMY_HASH
+		);
+
+		if (!foundUser || !passwordMatches) {
 			return res.status(INVALID_CREDENTIALS_ERROR_CODE).json({
 				success: false,
 				msg: INVALID_CREDENTIALS_ERROR,
-				action: "Searching User",
 			});
 		}
+
+		if (!foundUser.emailVerified) {
+			return res.status(EMAIL_NOT_VERIFIED_CODE).json({
+				success: false,
+				msg: EMAIL_NOT_VERIFIED,
+			});
+		}
+
 		const JWT_SECRETS = process.env.JWT_SECRETS;
 
-		const signedToken = jwt.sign({ uid: foundUser._id }, JWT_SECRETS);
+		if (!JWT_SECRETS) {
+			throw new Error("Please define the JWT_SECRETS environment variable");
+		}
+
+		const SEVEN_DAYS_IN_SECONDS = 60 * 60 * 24 * 7;
+
+		const signedToken = jwt.sign({ uid: foundUser._id }, JWT_SECRETS, {
+			expiresIn: "7d",
+		});
 
 		setCookie("token", signedToken, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			httpOnly: true,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
+		// Not httpOnly: read client-side by lib/getUser.js to show the
+		// signed-in user's name in the nav without a round trip. Contains
+		// no sensitive data.
 		setCookie("email", foundUser.email, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
 		setCookie("name", foundUser.firstName, {
 			req,
 			res,
-			secure: false,
-			httpOnly: false,
+			secure: process.env.NODE_ENV === "production",
+			sameSite: "lax",
+			maxAge: SEVEN_DAYS_IN_SECONDS,
 		});
 
 		return res.json({

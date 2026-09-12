@@ -12,7 +12,7 @@ import {
 
 import Link from "next/link";
 import getUser from "../lib/getUser";
-import { deleteCookie } from "cookies-next";
+import axiosInstance from "../axios/axios-instance";
 import { useRouter } from "next/router";
 import Image from "next/image";
 const MenuItem = ({ href, title, name, focusOn }) => {
@@ -44,8 +44,11 @@ const Navbar = ({ focusOn }) => {
 	}, []);
 
 	const handleLogout = async () => {
-		deleteCookie("token");
-		deleteCookie("name");
+		try {
+			await axiosInstance.post("/api/auth/logout");
+		} catch (err) {
+			console.log("logout err >> ", err);
+		}
 		setUser(getUser());
 		router.replace("/");
 	};
@@ -106,8 +109,16 @@ const Navbar = ({ focusOn }) => {
 						<AiOutlineHeart className="text-2xl" />
 					</div>
 				</Link>
+				<MenuItem focusOn={focusOn} href={"/nearby"} title={"Near My Dorm"} name="nearby" />
 				{user.name ? (
 					<>
+						<MenuItem
+							focusOn={focusOn}
+							href={"/orders"}
+							title={"Orders"}
+							name="orders"
+						/>
+
 						<MenuItem
 							focusOn={focusOn}
 							href={"/profile"}

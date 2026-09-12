@@ -6,6 +6,7 @@ const { logger } = require("../../debugger/logger");
 const productModel = require("../../models/product.model");
 import formidable from "formidable";
 import { uploadFileToCDN } from "../../lib/cloudinary";
+import { lookupTextbookByISBN } from "../../lib/textbookLookup";
 
 const formidableConfig = {
 	keepExtensions: true,
@@ -42,10 +43,44 @@ const postProduct = async (req, res) => {
 			}
 
 			const productJSON = JSON.parse(product);
+			const {
+				name,
+				price,
+				counts,
+				description,
+				categories,
+				condition,
+				pickupBuildingId,
+				listingExpiresAt,
+				textbookDetails,
+			} = productJSON;
+
+			let resolvedTextbookDetails;
+			if (textbookDetails?.isbn) {
+				const lookedUp = await lookupTextbookByISBN(textbookDetails.isbn);
+				resolvedTextbookDetails = {
+					isbn: textbookDetails.isbn,
+					courseCode: textbookDetails.courseCode,
+					title: lookedUp?.title ?? textbookDetails.title,
+					author: lookedUp?.author ?? textbookDetails.author,
+					edition: lookedUp?.edition ?? textbookDetails.edition,
+				};
+			} else if (textbookDetails?.courseCode) {
+				resolvedTextbookDetails = { courseCode: textbookDetails.courseCode };
+			}
 
 			const newProduct = productModel({
-				...productJSON,
+				name,
+				price,
+				counts,
+				description,
+				categories,
+				condition,
+				pickupBuildingId,
+				listingExpiresAt,
+				textbookDetails: resolvedTextbookDetails,
 				productImages: productImagesURLs,
+				seller: req.user.uid,
 			});
 
 			newProduct

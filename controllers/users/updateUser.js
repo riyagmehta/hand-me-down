@@ -3,6 +3,8 @@ const {
 	INTERNAL_SERVER_ERROR,
 	INVALID_REQUEST_DATA_CODE,
 	INVALID_REQUEST_DATA,
+	FORBIDDEN_ERROR,
+	FORBIDDEN_ERROR_CODE,
 } = require("../../constants/constants");
 const { logger } = require("../../debugger/logger");
 const userModel = require("../../models/user.model");
@@ -23,6 +25,21 @@ const formidableConfig = {
 
 const updateUser = async (req, res) => {
 	const { uid } = req.query;
+
+	if (!mongoose.isValidObjectId(uid))
+		return res.status(INVALID_REQUEST_DATA_CODE).json({
+			success: false,
+			msg: INVALID_REQUEST_DATA,
+			action: "uid Validation",
+		});
+
+	if (req.user.uid !== uid) {
+		return res.status(FORBIDDEN_ERROR_CODE).json({
+			success: false,
+			msg: FORBIDDEN_ERROR,
+		});
+	}
+
 	const form = formidable(formidableConfig);
 	let userData = {};
 
@@ -38,13 +55,6 @@ const updateUser = async (req, res) => {
 			console.log("no avatar found");
 		}
 
-		if (!mongoose.isValidObjectId(uid))
-			return res.status(INVALID_REQUEST_DATA_CODE).json({
-				success: false,
-				msg: INVALID_REQUEST_DATA,
-				action: "uid Validation",
-			});
-
 		console.log("userData >> ", userData);
 
 		const {
@@ -56,6 +66,10 @@ const updateUser = async (req, res) => {
 			email,
 			phoneNumber,
 			address,
+			graduationYear,
+			major,
+			courses,
+			dormBuildingId,
 		} = userData;
 
 		try {
@@ -71,6 +85,10 @@ const updateUser = async (req, res) => {
 					phoneNumber,
 					address,
 					avatarURL: avatarURL,
+					graduationYear,
+					major,
+					courses,
+					dormBuildingId,
 				},
 				{ new: true }
 			);

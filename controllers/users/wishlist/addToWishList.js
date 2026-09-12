@@ -9,10 +9,10 @@ const {
 const { logger } = require("../../../debugger/logger");
 
 const addToWishList = async (req, res) => {
-	const { uid } = req.query;
+	const { uid } = req.user;
 	const { pid } = req.body;
 
-	if (!mongoose.isValidObjectId(uid) || !mongoose.isValidObjectId(pid))
+	if (!mongoose.isValidObjectId(pid))
 		return res.status(INVALID_REQUEST_DATA_CODE).json({
 			success: false,
 			msg: INVALID_REQUEST_DATA,

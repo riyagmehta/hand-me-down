@@ -1,8 +1,9 @@
+const { deleteCookie } = require("cookies-next");
+
 const logoutUser = async (req, res) => {
-	if (req.session) req.session.destroy();
-	else {
-		console.log("No user is logged in");
-	}
+	deleteCookie("token", { req, res });
+	deleteCookie("email", { req, res });
+	deleteCookie("name", { req, res });
 	return res.json({ success: true });
 };
 

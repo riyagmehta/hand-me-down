@@ -1,4 +1,5 @@
 import dbConnect from "../../../lib/dbConnect";
+import requireAuth from "../../../lib/requireAuth";
 import { getProductsWithFilter } from "../../../controllers/products/getProductsWithFilter";
 import { postProduct } from "../../../controllers/products/postProduct";
 
@@ -17,7 +18,7 @@ export default async function handler(req, res) {
 			return getProductsWithFilter(req, res);
 			break;
 		case "POST":
-			return postProduct(req, res);
+			return requireAuth(postProduct)(req, res);
 			break;
 	}
 }

@@ -33,8 +33,8 @@ const Register = () => {
 					toast.error(data.msg);
 					return;
 				} else {
-					toast.success("Account created ☑️");
-					// router.push("/login");
+					toast.success("Account created -- check your email for a verification code");
+					router.push(`/verify-email?email=${encodeURIComponent(email)}`);
 				}
 				console.log(data);
 			})
@@ -95,7 +95,16 @@ const Register = () => {
 									errors={errors}
 									register={register}
 									isRequired={true}
-									title={"Email"}
+									title={"Email (school email required)"}
+								/>
+
+								<FormInputField
+									name={"graduationYear"}
+									errors={errors}
+									register={register}
+									isRequired={true}
+									title={"Graduation Year"}
+									type={"number"}
 								/>
 
 								<FormInputField

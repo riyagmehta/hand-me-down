@@ -1,33 +1,211 @@
-URL:https://hand-me-down-chi.vercel.app/
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Hand Me Down
 
-## Getting Started
+A campus marketplace: graduating seniors offload textbooks, dorm
+furniture, and electronics to incoming juniors/underclassmen at the same
+school. Registration is restricted to a school's email domain, and
+listings are matched to students by shared major/courses.
 
-First, run the development server:
+Live: https://hand-me-down-chi.vercel.app/
+
+## Stack
+
+- **Framework:** Next.js 13 (pages router) -- both the frontend and the
+  `/api/*` backend live in this one app.
+- **Database:** MongoDB via Mongoose.
+- **Auth:** JWT stored in an httpOnly cookie, bcrypt-hashed passwords.
+- **Images:** Cloudinary.
+- **Tests:** Jest + `mongodb-memory-server` (real in-memory MongoDB, not
+  mocks) + `node-mocks-http`.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy `.env.example` to `.env.local` and fill in:
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+- `MONGODB_URI` -- a MongoDB connection string (e.g. a free Atlas M0 cluster).
+- `CDN_CLOUD_NAME` / `CDN_API_KEY` / `CDN_API_SECRET` -- a Cloudinary account
+  (used for product/avatar image uploads).
+- `JWT_SECRETS` -- any long random string used to sign auth tokens.
+- `ALLOWED_EMAIL_DOMAINS` -- comma-separated school email domains allowed to
+  register (defaults to the placeholder `example.edu`; set this to your
+  real school's domain(s)).
+- `CRON_SECRET` -- checked against the `Authorization` header on the daily
+  listing-archive job; Vercel sends this header automatically on its own
+  Cron triggers once this env var is set on the project.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+```bash
+npm test         # run the test suite (jest --runInBand)
+npm run build    # production build
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Architecture
 
-## Learn More
+Routes under `pages/api/**` are thin dispatchers on `req.method` that call
+into `controllers/**`, which hold the actual request handling and talk to
+the Mongoose models in `models/**` directly. There's no separate service
+or repository layer -- controllers are the business logic layer.
 
-To learn more about Next.js, take a look at the following resources:
+### Auth
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Login (`controllers/auth/loginUser.js`) verifies the password with
+  `bcrypt.compare` against the stored hash, then signs a JWT
+  (`{ uid }`, 7-day expiry) and sets it as an **httpOnly** cookie named
+  `token`. Non-sensitive `email`/`name` cookies are set alongside it,
+  readable client-side, purely so the nav bar can show who's signed in
+  without an extra request.
+- Every API route that mutates or reads private data is wrapped in
+  `lib/requireAuth.js`, which reads the `token` cookie, verifies its
+  signature with `jsonwebtoken`, and attaches `req.user = { uid }` to the
+  request -- or returns 401. Browsing endpoints (product/user listing)
+  stay public; everything else requires this.
+- Ownership, not just authentication, is enforced per-endpoint: a user can
+  only update their own profile, a seller can only update their own
+  product listings (enforced atomically in the update query itself, not
+  as a separate check), and the wishlist endpoints operate on
+  `req.user.uid` from the verified token -- never on a client-supplied id.
+- `GET /api/auth/me` returns the authenticated user's identity; pages use
+  it instead of decoding the JWT client-side, since the token cookie is
+  httpOnly and unreadable by browser JS by design.
+- Logout (`POST /api/auth/logout`) clears all three auth cookies
+  server-side; a client can't clear an httpOnly cookie itself.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### School-verified identity
 
-## Deployed on Vercel
+Layers on top of the auth above rather than replacing it -- password/JWT
+mechanics are unchanged; this gates account *usability* in front of them.
 
-URL: https://hand-me-down-chi.vercel.app/
+- Registration checks the email's domain against `ALLOWED_EMAIL_DOMAINS`
+  (`lib/emailAllowlist.js`) before creating the account.
+- A 6-digit code is generated, hashed (like a password, not stored in
+  plaintext), and kept in its own `emailVerifications` collection rather
+  than on `User` -- keeps transient signup-flow state out of the core
+  entity and makes resends (new code, old one invalidated) clean.
+- `lib/mailer.js` simulates delivery (logs the code) rather than sending a
+  real email -- real delivery needs new infra (an SMTP account or email
+  API) that wasn't in scope; swappable behind the same function signature.
+- Login rejects a correct password for an unverified account.
+- `graduationYear` is stored on `User`; class standing
+  (freshman/junior/senior/etc) is deliberately *not* stored alongside it --
+  `lib/academic.js` derives it from `graduationYear` and the current date
+  on every read, so it can't drift the way a saved label would once a new
+  term starts.
+
+### Checkout and inventory
+
+`POST /api/orders` (`controllers/orders/placeOrder.js`) is the purchase
+flow -- products had a `counts` field from the start, but nothing ever
+decremented it before this.
+
+- **No overselling under concurrency.** The stock check and the decrement
+  are one atomic `findOneAndUpdate` (`{ counts: { $gte: quantity } }` /
+  `$inc -quantity`), not a separate read-then-write. Two buyers racing the
+  last unit of an item can't both see enough stock and both proceed --
+  MongoDB's per-document write atomicity serializes them, so the second
+  request's filter is evaluated against the already-decremented document
+  and fails to match instead of overselling.
+- **Idempotent by a unique index, not just an upfront check.** Each
+  request carries a client-generated `idempotencyKey`. An early
+  `findOne` short-circuits the common retry case, but the actual
+  guarantee is a **unique index** on that field: if two requests race
+  with the same key, only one order insert can win, and the loser
+  compensates by giving back the stock it reserved and returns the
+  winner's order instead of creating a duplicate. The same compensation
+  runs if order creation fails for any other reason, so a mid-flight
+  failure never leaves stock silently short.
+- Tested against a real in-memory MongoDB with actual concurrent
+  requests (`Promise.all`, not mocked timing) for both the oversell case
+  and the shared-idempotency-key case.
+- Orders can be cancelled (`PUT /api/orders/:oid/cancel`, either party --
+  buyer or seller) which restocks the product. The status flip
+  (`"placed"` -> `"cancelled"`) is itself an atomic conditional update
+  filtered on `status: "placed"`, so two concurrent cancel attempts on
+  the same order can't both succeed -- same pattern as the stock
+  decrement. If the restock fails after the flip, the cancellation is
+  rolled back rather than leaving stock permanently short.
+- `GET /api/orders` (buyer or seller) backs a `/orders` page showing
+  purchase and sale history with a cancel action.
+
+### Semester-aware listings, bundles, and textbooks
+
+- Listings carry `status` (`active`/`archived`) and an optional
+  `listingExpiresAt` (a move-out window). A daily Vercel Cron job
+  (`GET /api/cron/archive-expired-listings`, authorized by `CRON_SECRET`
+  rather than a logged-in user) bulk-archives anything past its expiry.
+  Browsing filters on `status` independently of whether the cron has run
+  recently, so a missed/delayed run means at most ~24h of staleness, not
+  broken browsing -- an explicit, accepted tradeoff of free-tier cron
+  granularity.
+- `textbookDetails` (isbn/title/author/edition/courseCode) auto-fills from
+  Open Library's free Books API on ISBN entry; `courseCode` stays manual.
+  Same best-effort pattern as geocoding -- a failed lookup falls back to
+  whatever the seller typed rather than blocking the listing.
+- **Bundles** (`models/bundle.model.js`) reference existing `Product` docs
+  rather than duplicating their data, which makes buying one a genuine
+  multi-document consistency problem: reserving stock across N separate
+  products as one unit of work. This is implemented as a **saga** --
+  the same atomic per-document conditional decrement as single-item
+  checkout, applied to each bundle item in sequence, with an explicit
+  compensating rollback if a later item is out of stock or order creation
+  fails. (A native MongoDB multi-document transaction was the first
+  attempt -- Atlas's free M0 tier supports these since it's a replica set
+  -- but hit a reproducible Jest/driver incompatibility in replica-set
+  mode; the saga is also the more portable choice regardless, since it
+  works on any MongoDB deployment, not only ones provisioned as a replica
+  set.) A product locks out of individual sale while bundled
+  (`Product.bundledIn`), checked in the single-item checkout path too.
+
+### Junior-senior matching
+
+`GET /api/products/recommended` ranks active listings for the signed-in
+viewer via weighted tag-overlap scoring (`lib/matching.js`): exact course
+match > same major > graduating senior > recency (a decaying tie-breaker).
+Deliberately not a graph/PageRank model over a students-courses-listings
+graph -- at this data density the signal that matters is already a direct
+edge (shared course/major tag), and a graph approach has a *worse*
+cold-start story (zero edges for a new user) while adding real
+infrastructure to build and keep in sync. A viewer with no major/courses
+set, or a listing with no course code, degenerates gracefully to a
+senior-boosted recency feed rather than scoring everything zero.
+
+### Campus-level location
+
+Listings pick a building from a fixed list (`constants/campusBuildings.js`
+-- a placeholder "Example University" set; swap in your real school's
+buildings/dorms) instead of a free-text address geocoded live. This is a
+stricter free-tier posture than even rate-limited geocoding: building
+coordinates are a one-time hardcoded fixture, so there are zero external
+location requests at all, ever.
+
+- "Near my dorm" (`GET /api/products/nearby-building`) is a plain indexed
+  equality match on `pickupBuildingId` -- no geospatial index or query
+  needed for an exact-match problem.
+- Meetup-point suggestion (`lib/campusMeetup.js`) reuses the same
+  great-circle midpoint math from `lib/geo.js` against building
+  coordinates, then snaps the result to the *nearest real building* in the
+  fixed list -- "meet at the Student Union," not a bare coordinate.
+  Computed client-side (pure math, no server round trip) once both
+  parties' buildings are known.
+- An earlier iteration of this same idea used live Nominatim geocoding of
+  free-text addresses with a 2dsphere/`$nearSphere` radius search; that
+  code (`lib/geocode.js`, `GET /api/products/nearby`) was removed once
+  every listing had a fixed building instead, rather than left as dead,
+  unreachable code.
+
+### Tests
+
+Controller tests spin up a real in-memory MongoDB per test file
+(`test/setup.js`) rather than mocking Mongoose, so they exercise actual
+queries, indexes, and atomic operators -- including genuine concurrent
+requests against the same document for the checkout race conditions
+above. Run serially (`jest --runInBand`) -- running many suites in
+parallel starts too many concurrent in-memory MongoDB instances and
+gets flaky under load.
+
+---
+
+This section will keep growing as the project moves past checkout into
+the geospatial and search work described in-repo.

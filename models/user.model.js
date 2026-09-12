@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { CAMPUS_BUILDING_IDS } = require("../constants/campusBuildings");
 
 const AddressSchema = mongoose.Schema({
 	city: { type: String, default: "" },
@@ -17,11 +18,24 @@ const UserSchema = mongoose.Schema({
 	dateOfBirth: { type: String },
 
 	// contact information
-	email: { type: String, default: "" },
+	email: { type: String, default: "", unique: true },
 	phoneNumber: { type: String, default: "" },
 	avatarURL: { type: String, default: "" },
 	// credential
-	password: { type: String, required: true },
+	password: { type: String, required: true, select: false },
+
+	// school-verified identity
+	emailVerified: { type: Boolean, default: false },
+	// The year this student graduates (or graduated). Class standing
+	// (freshman/junior/senior/etc) is deliberately not stored -- it's
+	// derived from this plus the current date in lib/academic.js, so it
+	// can't go stale the way a stored label would.
+	graduationYear: { type: Number },
+	major: { type: String },
+	courses: [String],
+	// Default building for "items near my dorm" -- optional, overridable
+	// per search.
+	dormBuildingId: { type: String, enum: CAMPUS_BUILDING_IDS },
 
 	// address
 	address: {

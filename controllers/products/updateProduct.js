@@ -25,21 +25,23 @@ const updateProduct = async (req, res) => {
 		description,
 		categories,
 		condition,
-		pickupAddress,
+		pickupBuildingId,
 	} = req.body;
 
 	try {
+		const update = {
+			name,
+			price,
+			counts,
+			description,
+			categories,
+			condition,
+			pickupBuildingId,
+		};
+
 		const updatedProduct = await productModel.findOneAndUpdate(
-			{ _id: pid },
-			{
-				name,
-				price,
-				counts,
-				description,
-				categories,
-				condition,
-				pickupAddress,
-			},
+			{ _id: pid, seller: req.user.uid },
+			update,
 			{ new: true, upsert: false }
 		);
 

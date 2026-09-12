@@ -7,24 +7,29 @@ import Navbar from "../../components/Navbar";
 import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a loader
 import { Carousel } from "react-responsive-carousel";
 import { useRouter } from "next/router";
-import getUser from "../../lib/getUser";
-import { verify } from "jsonwebtoken";
-import { getCookie, getCookies } from "cookies-next";
 import { ToastContainer, toast } from "react-toastify";
-import verifyJWT from "../../lib/verifyJWT";
 import { AiOutlineMail, AiOutlinePhone, AiOutlineUser } from "react-icons/ai";
+import { CAMPUS_BUILDINGS } from "../../constants/campusBuildings";
+import { suggestMeetupBuilding } from "../../lib/campusMeetup";
+
+const campusBuildingName = (buildingId) =>
+	CAMPUS_BUILDINGS.find((building) => building.id === buildingId)?.name || "Unknown";
+
 const ProductView = (props) => {
 	const [product, setProduct] = useState(props.product);
 	const [seller, setSeller] = useState(props.seller);
 	const [token, setToken] = useState();
+	const [myBuildingId, setMyBuildingId] = useState("");
+	const meetupSuggestion = myBuildingId
+		? suggestMeetupBuilding(myBuildingId, product.pickupBuildingId)
+		: null;
 	console.log("seller >> ", props.seller);
 
 	useEffect(() => {
-		// setProduct(props.product);
-		// setSeller(props.seller);
-		const token = getCookie("token");
-		const decodedToken = verifyJWT(token);
-		setToken(decodedToken);
+		axiosInstance
+			.get("/api/auth/me")
+			.then(({ data }) => setToken({ uid: data.data._id }))
+			.catch(() => setToken(null));
 	}, []);
 
 	const router = useRouter();
@@ -51,6 +56,28 @@ const ProductView = (props) => {
 		}
 	};
 
+	const handleBuyNow = async () => {
+		if (!token || !token.uid) {
+			router.push("/login");
+			return;
+		}
+		try {
+			const idempotencyKey = window.crypto.randomUUID();
+			const { data } = await axiosInstance.post("/api/orders", {
+				pid: product._id,
+				quantity: 1,
+				idempotencyKey,
+			});
+
+			if (data.success === true) {
+				toast.success("Order placed!");
+				setProduct((prev) => ({ ...prev, counts: prev.counts - 1 }));
+			}
+		} catch (err) {
+			toast.error(err.response?.data?.msg || "Could not place order");
+		}
+	};
+
 	return (
 		<>
 			<Navbar />
@@ -68,18 +95,29 @@ const ProductView = (props) => {
 						<span className="font-semibold">Price :</span> {product.price}
 					</p>
 					<p>
-						<span className="font-semibold">Address :</span>
-						{product.pickupAddress}
+						<span className="font-semibold">Pickup building :</span>{" "}
+						{campusBuildingName(product.pickupBuildingId)}
 					</p>
-					<p>
-						<a
-							href={`https://www.google.com/maps/search/${product.pickupAddress}`}
-							className="bg-blue-500 text-white  hover:bg-blue-400 px-4 py-2 "
-							target="_blank"
+					<div className="flex flex-col gap-2">
+						<span className="font-semibold">Suggest a meetup point:</span>
+						<select
+							className="outline-none px-2 py-1 border-[1px] border-black w-64"
+							value={myBuildingId}
+							onChange={(e) => setMyBuildingId(e.target.value)}
 						>
-							View On Map
-						</a>
-					</p>
+							<option value="">Select your building...</option>
+							{CAMPUS_BUILDINGS.map((building) => (
+								<option key={building.id} value={building.id}>
+									{building.name}
+								</option>
+							))}
+						</select>
+						{meetupSuggestion && (
+							<p>
+								Suggested meetup: <strong>{meetupSuggestion.name}</strong>
+							</p>
+						)}
+					</div>
 					<div>
 						<p className="font-semibold">Categories :</p>
 						<div className="flex flex-row gap-2 my-2">
@@ -110,13 +148,25 @@ const ProductView = (props) => {
 							<a href={`mailto:${seller.email}`}>{seller.email}</a>
 						</div>
 					</div>
-					<button
-						type="button"
-						onClick={handleAddToWishList}
-						className="px-4 py-2 uppercase font-semibold bg-blue-500 text-white  hover:bg-blue-400 transition-all duration-500  rounded-2"
-					>
-						Add To Wishlist
-					</button>
+					<div className="flex flex-row gap-3">
+						{token && token.uid !== product.seller && (
+							<button
+								type="button"
+								onClick={handleBuyNow}
+								disabled={product.counts < 1}
+								className="px-4 py-2 uppercase font-semibold bg-green-600 text-white hover:bg-green-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-500 rounded-2"
+							>
+								{product.counts < 1 ? "Sold Out" : "Buy Now"}
+							</button>
+						)}
+						<button
+							type="button"
+							onClick={handleAddToWishList}
+							className="px-4 py-2 uppercase font-semibold bg-blue-500 text-white  hover:bg-blue-400 transition-all duration-500  rounded-2"
+						>
+							Add To Wishlist
+						</button>
+					</div>
 				</div>
 				<div className="md:w-1/2">
 					{product.productImages.length > 0 && (

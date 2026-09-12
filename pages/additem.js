@@ -15,6 +15,7 @@ import {
 import { toast, ToastContainer } from "react-toastify";
 import axiosInstance from "../axios/axios-instance";
 import verifyJWT from "../lib/verifyJWT";
+import { CAMPUS_BUILDINGS } from "../constants/campusBuildings";
 
 const AddItem = (props) => {
 	const [isLoading, setIsLoading] = useState(false);
@@ -190,13 +191,49 @@ const AddItem = (props) => {
 						</select>
 					</div>
 
-					<FormInputField
-						name={"pickupAddress"}
-						errors={errors}
-						register={register}
-						isRequired={true}
-						title={"Pickup address"}
-					/>
+					<div className="flex flex-col gap-1 w-full">
+						<span className="font-semibold">Pickup building *</span>
+						<select
+							className="outline-none px-4 py-1 border-[1px] border-black"
+							{...register("pickupBuildingId", {
+								required: "Pickup building is required",
+							})}
+						>
+							{CAMPUS_BUILDINGS.map((building) => (
+								<option key={building.id} value={building.id}>
+									{building.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<div className="flex flex-col gap-1 w-full">
+						<span className="font-semibold">
+							Move-out / listing expiry date (optional)
+						</span>
+						<input
+							type="date"
+							{...register("listingExpiresAt")}
+							className="outline-none px-4 py-1 border-[1px] border-black"
+						/>
+					</div>
+
+					<div className="flex flex-col gap-2 w-full border-t-[1px] border-gray-300 pt-4">
+						<span className="font-semibold">Selling a textbook? (optional)</span>
+						<FormInputField
+							name={"textbookDetails.isbn"}
+							errors={errors}
+							register={register}
+							title={"ISBN (auto-fills title/author)"}
+						/>
+						<FormInputField
+							name={"textbookDetails.courseCode"}
+							errors={errors}
+							register={register}
+							title={"Course Code (e.g. CS 101)"}
+						/>
+					</div>
+
 					<button
 						type="submit"
 						disabled={isLoading}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { useForm } from "react-hook-form";
 import FormInputField from "../../../../../components/FormInputField";
+import { CAMPUS_BUILDINGS } from "../../../../../constants/campusBuildings";
 import Image from "next/image";
 import { BeatLoader } from "react-spinners";
 import { getCookie } from "cookies-next";
@@ -168,13 +169,21 @@ const EditAddedItem = (props) => {
 						</select>
 					</div>
 
-					<FormInputField
-						name={"pickupAddress"}
-						errors={errors}
-						register={register}
-						isRequired={true}
-						title={"Pickup address"}
-					/>
+					<div className="flex flex-col gap-1 w-full">
+						<span className="font-semibold">Pickup building *</span>
+						<select
+							className="outline-none px-4 py-1 border-[1px] border-black"
+							{...register("pickupBuildingId", {
+								required: "Pickup building is required",
+							})}
+						>
+							{CAMPUS_BUILDINGS.map((building) => (
+								<option key={building.id} value={building.id}>
+									{building.name}
+								</option>
+							))}
+						</select>
+					</div>
 					<button
 						type="submit"
 						disabled={isLoading}
@@ -198,7 +207,7 @@ export async function getServerSideProps({ req, res, params }) {
 	const { sid, pid } = params;
 	const decodedToken = verifyJWT(token);
 
-	if (sid == decodedToken.uid) {
+	if (decodedToken && sid == decodedToken.uid) {
 		const { data } = await axiosInstance.get(`/api/products/${pid}`);
 		return {
 			props: data.data,

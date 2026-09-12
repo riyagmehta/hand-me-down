@@ -1,4 +1,5 @@
 import dbConnect from "../../../../../lib/dbConnect";
+import requireAuth from "../../../../../lib/requireAuth";
 import { removeFromWishList } from "../../../../../controllers/users/wishlist/removeFromWishlist";
 
 export default async function handler(req, res) {
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
 		case "POST":
 			break;
 		case "PUT":
-			return removeFromWishList(req, res);
+			return requireAuth(removeFromWishList)(req, res);
 			break;
 	}
 }

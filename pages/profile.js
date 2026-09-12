@@ -1,6 +1,7 @@
 import { getCookie, getCookies } from "cookies-next";
 import axiosInstance from "../axios/axios-instance";
 import verifyJWT from "../lib/verifyJWT";
+import { CAMPUS_BUILDINGS } from "../constants/campusBuildings";
 import { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import { useDropzone } from "react-dropzone";
@@ -35,11 +36,24 @@ const Profile = (props) => {
 		for (const field in user) {
 			setValue(field, user[field]);
 		}
+		if (Array.isArray(user.courses)) {
+			setValue("coursesText", user.courses.join(", "));
+		}
 	});
 
 	const handleLogin = async (filledData) => {
+		const { coursesText, ...rest } = filledData;
+		const dataToSend = {
+			...rest,
+			courses: coursesText
+				? coursesText
+						.split(",")
+						.map((course) => course.trim())
+						.filter(Boolean)
+				: [],
+		};
 		let formData = new FormData();
-		formData.append("user", JSON.stringify(filledData));
+		formData.append("user", JSON.stringify(dataToSend));
 		if (acceptedFiles.length == 1) {
 			formData.append("avatar", acceptedFiles[0]);
 		}
@@ -195,6 +209,43 @@ const Profile = (props) => {
 							title={"Complete Address"}
 						/>
 
+						<FormInputField
+							name={"graduationYear"}
+							errors={errors}
+							register={register}
+							title={"Graduation Year"}
+							type={"number"}
+						/>
+
+						<FormInputField
+							name={"major"}
+							errors={errors}
+							register={register}
+							title={"Major"}
+						/>
+
+						<FormInputField
+							name={"coursesText"}
+							errors={errors}
+							register={register}
+							title={"Courses (comma-separated, e.g. CS 301, MATH 201)"}
+						/>
+
+						<div className="flex flex-col gap-1 w-full">
+							<span className="font-semibold">Your dorm/building</span>
+							<select
+								className="outline-none px-4 py-1 border-[1px] border-black"
+								{...register("dormBuildingId")}
+							>
+								<option value="">Not set</option>
+								{CAMPUS_BUILDINGS.map((building) => (
+									<option key={building.id} value={building.id}>
+										{building.name}
+									</option>
+								))}
+							</select>
+						</div>
+
 						<button
 							type="submit"
 							disabled={isLoading}
@@ -220,7 +271,9 @@ export async function getServerSideProps({ req, res }) {
 	const decodedToken = verifyJWT(token);
 	if (decodedToken) {
 		const { uid } = decodedToken;
-		const { data } = await axiosInstance.get(`/api/users/${uid}`);
+		const { data } = await axiosInstance.get(`/api/users/${uid}`, {
+			headers: { cookie: req.headers.cookie },
+		});
 		return {
 			props: data.data,
 		};
