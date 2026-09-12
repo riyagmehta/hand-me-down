@@ -1,4 +1,5 @@
 const httpMocks = require("node-mocks-http");
+const mongoose = require("mongoose");
 const dbConnect = require("../../../lib/dbConnect").default;
 const userModel = require("../../../models/user.model");
 const productModel = require("../../../models/product.model");
@@ -39,6 +40,27 @@ function callPlaceOrder({ pid, quantity, idempotencyKey, buyerId }) {
 }
 
 describe("placeOrder", () => {
+	it("refuses to sell a product individually while it's locked in an active bundle", async () => {
+		const seller = await makeSeller();
+		const buyer = await makeBuyer();
+		const product = await makeProduct(seller._id, 5);
+		await productModel.updateOne(
+			{ _id: product._id },
+			{ bundledIn: new mongoose.Types.ObjectId() }
+		);
+
+		const res = await callPlaceOrder({
+			pid: product._id.toString(),
+			quantity: 1,
+			idempotencyKey: "key-bundled",
+			buyerId: buyer._id.toString(),
+		});
+
+		expect(res.statusCode).toBe(400);
+		const unchanged = await productModel.findOne({ _id: product._id });
+		expect(unchanged.counts).toBe(5);
+	});
+
 	it("places an order and decrements stock on the happy path", async () => {
 		const seller = await makeSeller();
 		const buyer = await makeBuyer();

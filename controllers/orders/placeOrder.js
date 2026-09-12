@@ -53,6 +53,13 @@ const placeOrder = async (req, res) => {
 			});
 		}
 
+		if (product.bundledIn) {
+			return res.status(INVALID_REQUEST_DATA_CODE).json({
+				success: false,
+				msg: INVALID_REQUEST_DATA,
+			});
+		}
+
 		// The check (counts >= quantity) and the write (decrement) happen as
 		// one atomic MongoDB operation, so two concurrent requests can't both
 		// see enough stock and both proceed -- the second one's filter is
