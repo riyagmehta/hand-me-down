@@ -197,6 +197,34 @@ const AddItem = (props) => {
 						isRequired={true}
 						title={"Pickup address"}
 					/>
+
+					<div className="flex flex-col gap-1 w-full">
+						<span className="font-semibold">
+							Move-out / listing expiry date (optional)
+						</span>
+						<input
+							type="date"
+							{...register("listingExpiresAt")}
+							className="outline-none px-4 py-1 border-[1px] border-black"
+						/>
+					</div>
+
+					<div className="flex flex-col gap-2 w-full border-t-[1px] border-gray-300 pt-4">
+						<span className="font-semibold">Selling a textbook? (optional)</span>
+						<FormInputField
+							name={"textbookDetails.isbn"}
+							errors={errors}
+							register={register}
+							title={"ISBN (auto-fills title/author)"}
+						/>
+						<FormInputField
+							name={"textbookDetails.courseCode"}
+							errors={errors}
+							register={register}
+							title={"Course Code (e.g. CS 101)"}
+						/>
+					</div>
+
 					<button
 						type="submit"
 						disabled={isLoading}

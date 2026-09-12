@@ -37,6 +37,7 @@ const getProductsWithFilter = async (req, res) => {
 
 	try {
 		const foundProducts = await productModel.find({
+			status: "active",
 			$or: [
 				{
 					name: {

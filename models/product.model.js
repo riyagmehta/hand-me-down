@@ -29,6 +29,32 @@ const ProductSchema = mongoose.Schema({
 		),
 		required: false,
 	},
+
+	// Semester-cycle-aware listings
+	status: { type: String, enum: ["active", "archived"], default: "active" },
+	listingExpiresAt: { type: Date },
+
+	// Set when this product is part of an active bundle -- locks it out of
+	// individual purchase (see placeOrder) until the bundle is sold or
+	// cancelled, so it can't be sold twice through two different paths.
+	bundledIn: { type: mongoose.Types.ObjectId, ref: "bundles", default: null },
+
+	// Structured textbook fields, optionally auto-filled from a free ISBN
+	// lookup (Open Library). courseCode is manual -- no external catalog
+	// knows a school's own course numbering.
+	textbookDetails: {
+		type: new mongoose.Schema(
+			{
+				isbn: String,
+				title: String,
+				author: String,
+				edition: String,
+				courseCode: String,
+			},
+			{ _id: false }
+		),
+		required: false,
+	},
 });
 
 ProductSchema.index({ location: "2dsphere" });

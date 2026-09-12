@@ -7,6 +7,7 @@ const productModel = require("../../models/product.model");
 import formidable from "formidable";
 import { uploadFileToCDN } from "../../lib/cloudinary";
 import { geocodeToGeoJSON } from "../../lib/geocode";
+import { lookupTextbookByISBN } from "../../lib/textbookLookup";
 
 const formidableConfig = {
 	keepExtensions: true,
@@ -51,9 +52,25 @@ const postProduct = async (req, res) => {
 				categories,
 				condition,
 				pickupAddress,
+				listingExpiresAt,
+				textbookDetails,
 			} = productJSON;
 
 			const location = await geocodeToGeoJSON(pickupAddress);
+
+			let resolvedTextbookDetails;
+			if (textbookDetails?.isbn) {
+				const lookedUp = await lookupTextbookByISBN(textbookDetails.isbn);
+				resolvedTextbookDetails = {
+					isbn: textbookDetails.isbn,
+					courseCode: textbookDetails.courseCode,
+					title: lookedUp?.title ?? textbookDetails.title,
+					author: lookedUp?.author ?? textbookDetails.author,
+					edition: lookedUp?.edition ?? textbookDetails.edition,
+				};
+			} else if (textbookDetails?.courseCode) {
+				resolvedTextbookDetails = { courseCode: textbookDetails.courseCode };
+			}
 
 			const newProduct = productModel({
 				name,
@@ -64,6 +81,8 @@ const postProduct = async (req, res) => {
 				condition,
 				pickupAddress,
 				location,
+				listingExpiresAt,
+				textbookDetails: resolvedTextbookDetails,
 				productImages: productImagesURLs,
 				seller: req.user.uid,
 			});
