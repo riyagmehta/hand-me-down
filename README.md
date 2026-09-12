@@ -65,16 +65,43 @@ or repository layer -- controllers are the business logic layer.
 - Logout (`POST /api/auth/logout`) clears all three auth cookies
   server-side; a client can't clear an httpOnly cookie itself.
 
+### Checkout and inventory
+
+`POST /api/orders` (`controllers/orders/placeOrder.js`) is the purchase
+flow -- products had a `counts` field from the start, but nothing ever
+decremented it before this.
+
+- **No overselling under concurrency.** The stock check and the decrement
+  are one atomic `findOneAndUpdate` (`{ counts: { $gte: quantity } }` /
+  `$inc -quantity`), not a separate read-then-write. Two buyers racing the
+  last unit of an item can't both see enough stock and both proceed --
+  MongoDB's per-document write atomicity serializes them, so the second
+  request's filter is evaluated against the already-decremented document
+  and fails to match instead of overselling.
+- **Idempotent by a unique index, not just an upfront check.** Each
+  request carries a client-generated `idempotencyKey`. An early
+  `findOne` short-circuits the common retry case, but the actual
+  guarantee is a **unique index** on that field: if two requests race
+  with the same key, only one order insert can win, and the loser
+  compensates by giving back the stock it reserved and returns the
+  winner's order instead of creating a duplicate. The same compensation
+  runs if order creation fails for any other reason, so a mid-flight
+  failure never leaves stock silently short.
+- Tested against a real in-memory MongoDB with actual concurrent
+  requests (`Promise.all`, not mocked timing) for both the oversell case
+  and the shared-idempotency-key case.
+
 ### Tests
 
 Controller tests spin up a real in-memory MongoDB per test file
 (`test/setup.js`) rather than mocking Mongoose, so they exercise actual
-queries, indexes, and atomic operators. Run serially
-(`jest --runInBand`) -- running many suites in parallel starts too many
-concurrent in-memory MongoDB instances and gets flaky under load.
+queries, indexes, and atomic operators -- including genuine concurrent
+requests against the same document for the checkout race conditions
+above. Run serially (`jest --runInBand`) -- running many suites in
+parallel starts too many concurrent in-memory MongoDB instances and
+gets flaky under load.
 
 ---
 
-This section will keep growing as the project moves past security
-hardening into the inventory/checkout, geospatial, and search work
-described in-repo.
+This section will keep growing as the project moves past checkout into
+the geospatial and search work described in-repo.
