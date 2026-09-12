@@ -37,7 +37,13 @@ const loginUser = async (req, res) => {
 		}
 		const JWT_SECRETS = process.env.JWT_SECRETS;
 
-		const signedToken = jwt.sign({ uid: foundUser._id }, JWT_SECRETS);
+		if (!JWT_SECRETS) {
+			throw new Error("Please define the JWT_SECRETS environment variable");
+		}
+
+		const signedToken = jwt.sign({ uid: foundUser._id }, JWT_SECRETS, {
+			expiresIn: "7d",
+		});
 
 		setCookie("token", signedToken, {
 			req,
