@@ -1,33 +1,80 @@
-URL:https://hand-me-down-chi.vercel.app/
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Hand Me Down
 
-## Getting Started
+A secondhand marketplace where users list and browse used items (books,
+household goods, etc.) for local pickup, with per-user wishlists.
 
-First, run the development server:
+Live: https://hand-me-down-chi.vercel.app/
+
+## Stack
+
+- **Framework:** Next.js 13 (pages router) -- both the frontend and the
+  `/api/*` backend live in this one app.
+- **Database:** MongoDB via Mongoose.
+- **Auth:** JWT stored in an httpOnly cookie, bcrypt-hashed passwords.
+- **Images:** Cloudinary.
+- **Tests:** Jest + `mongodb-memory-server` (real in-memory MongoDB, not
+  mocks) + `node-mocks-http`.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy `.env.example` to `.env.local` and fill in:
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+- `MONGODB_URI` -- a MongoDB connection string (e.g. a free Atlas M0 cluster).
+- `CDN_CLOUD_NAME` / `CDN_API_KEY` / `CDN_API_SECRET` -- a Cloudinary account
+  (used for product/avatar image uploads).
+- `JWT_SECRETS` -- any long random string used to sign auth tokens.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+```bash
+npm test         # run the test suite (jest --runInBand)
+npm run build    # production build
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Architecture
 
-## Learn More
+Routes under `pages/api/**` are thin dispatchers on `req.method` that call
+into `controllers/**`, which hold the actual request handling and talk to
+the Mongoose models in `models/**` directly. There's no separate service
+or repository layer -- controllers are the business logic layer.
 
-To learn more about Next.js, take a look at the following resources:
+### Auth
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Login (`controllers/auth/loginUser.js`) verifies the password with
+  `bcrypt.compare` against the stored hash, then signs a JWT
+  (`{ uid }`, 7-day expiry) and sets it as an **httpOnly** cookie named
+  `token`. Non-sensitive `email`/`name` cookies are set alongside it,
+  readable client-side, purely so the nav bar can show who's signed in
+  without an extra request.
+- Every API route that mutates or reads private data is wrapped in
+  `lib/requireAuth.js`, which reads the `token` cookie, verifies its
+  signature with `jsonwebtoken`, and attaches `req.user = { uid }` to the
+  request -- or returns 401. Browsing endpoints (product/user listing)
+  stay public; everything else requires this.
+- Ownership, not just authentication, is enforced per-endpoint: a user can
+  only update their own profile, a seller can only update their own
+  product listings (enforced atomically in the update query itself, not
+  as a separate check), and the wishlist endpoints operate on
+  `req.user.uid` from the verified token -- never on a client-supplied id.
+- `GET /api/auth/me` returns the authenticated user's identity; pages use
+  it instead of decoding the JWT client-side, since the token cookie is
+  httpOnly and unreadable by browser JS by design.
+- Logout (`POST /api/auth/logout`) clears all three auth cookies
+  server-side; a client can't clear an httpOnly cookie itself.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Tests
 
-## Deployed on Vercel
+Controller tests spin up a real in-memory MongoDB per test file
+(`test/setup.js`) rather than mocking Mongoose, so they exercise actual
+queries, indexes, and atomic operators. Run serially
+(`jest --runInBand`) -- running many suites in parallel starts too many
+concurrent in-memory MongoDB instances and gets flaky under load.
 
-URL: https://hand-me-down-chi.vercel.app/
+---
+
+This section will keep growing as the project moves past security
+hardening into the inventory/checkout, geospatial, and search work
+described in-repo.
