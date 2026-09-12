@@ -5,8 +5,15 @@ const userModel = require("../../../models/user.model");
 const productModel = require("../../../models/product.model");
 const { postProduct } = require("../../../controllers/products/postProduct");
 
+jest.mock("../../../lib/geocode");
+const { geocodeToGeoJSON } = require("../../../lib/geocode");
+
 beforeAll(async () => {
 	await dbConnect();
+});
+
+beforeEach(() => {
+	geocodeToGeoJSON.mockResolvedValue({ type: "Point", coordinates: [77.5946, 12.9716] });
 });
 
 function buildMultipartBody(boundary, productJSON) {
@@ -60,5 +67,32 @@ describe("postProduct", () => {
 		expect(res.statusCode).toBe(200);
 		const saved = await productModel.findOne({ name: "Bike" });
 		expect(saved.seller.toString()).toBe(realSeller._id.toString());
+	});
+
+	it("stores the geocoded location for the pickup address", async () => {
+		const seller = await userModel.create({ email: "geo-seller@example.com", password: "x" });
+
+		await postProductWithFields(
+			{ name: "Desk", condition: "good", pickupAddress: "MG Road, Bangalore" },
+			seller._id.toString()
+		);
+
+		expect(geocodeToGeoJSON).toHaveBeenCalledWith("MG Road, Bangalore");
+		const saved = await productModel.findOne({ name: "Desk" });
+		expect(saved.location.coordinates).toEqual([77.5946, 12.9716]);
+	});
+
+	it("still saves the product when geocoding fails to resolve an address", async () => {
+		geocodeToGeoJSON.mockResolvedValue(undefined);
+		const seller = await userModel.create({ email: "geo-fail@example.com", password: "x" });
+
+		const res = await postProductWithFields(
+			{ name: "Chair", condition: "good", pickupAddress: "somewhere unresolvable" },
+			seller._id.toString()
+		);
+
+		expect(res.statusCode).toBe(200);
+		const saved = await productModel.findOne({ name: "Chair" });
+		expect(saved.location).toBeUndefined();
 	});
 });

@@ -6,6 +6,7 @@ const { logger } = require("../../debugger/logger");
 const productModel = require("../../models/product.model");
 import formidable from "formidable";
 import { uploadFileToCDN } from "../../lib/cloudinary";
+import { geocodeToGeoJSON } from "../../lib/geocode";
 
 const formidableConfig = {
 	keepExtensions: true,
@@ -52,6 +53,8 @@ const postProduct = async (req, res) => {
 				pickupAddress,
 			} = productJSON;
 
+			const location = await geocodeToGeoJSON(pickupAddress);
+
 			const newProduct = productModel({
 				name,
 				price,
@@ -60,6 +63,7 @@ const postProduct = async (req, res) => {
 				categories,
 				condition,
 				pickupAddress,
+				location,
 				productImages: productImagesURLs,
 				seller: req.user.uid,
 			});

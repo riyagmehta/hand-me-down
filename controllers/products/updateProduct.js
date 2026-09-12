@@ -7,6 +7,7 @@ const {
 const { logger } = require("../../debugger/logger");
 const productModel = require("../../models/product.model");
 const mongoose = require("mongoose");
+const { geocodeToGeoJSON } = require("../../lib/geocode");
 
 const updateProduct = async (req, res) => {
 	const { pid } = req.query;
@@ -29,17 +30,29 @@ const updateProduct = async (req, res) => {
 	} = req.body;
 
 	try {
+		const update = {
+			name,
+			price,
+			counts,
+			description,
+			categories,
+			condition,
+			pickupAddress,
+		};
+
+		// Only re-geocode when the address actually changed. If the new
+		// address fails to geocode, leave the previous location as-is rather
+		// than clearing it -- a stale-but-plausible location beats none.
+		if (pickupAddress) {
+			const location = await geocodeToGeoJSON(pickupAddress);
+			if (location) {
+				update.location = location;
+			}
+		}
+
 		const updatedProduct = await productModel.findOneAndUpdate(
 			{ _id: pid, seller: req.user.uid },
-			{
-				name,
-				price,
-				counts,
-				description,
-				categories,
-				condition,
-				pickupAddress,
-			},
+			update,
 			{ new: true, upsert: false }
 		);
 
