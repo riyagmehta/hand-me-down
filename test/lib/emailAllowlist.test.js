@@ -40,6 +40,16 @@ describe("isAllowedEmailDomain", () => {
 		expect(isAllowedEmailDomain("student@EXAMPLE.EDU")).toBe(true);
 	});
 
+	it("accepts any domain matching a configured wildcard suffix", () => {
+		process.env.ALLOWED_EMAIL_DOMAINS = ".edu";
+		jest.resetModules();
+		const { isAllowedEmailDomain } = require("../../lib/emailAllowlist");
+
+		expect(isAllowedEmailDomain("student@sfsu.edu")).toBe(true);
+		expect(isAllowedEmailDomain("student@cs.berkeley.edu")).toBe(true);
+		expect(isAllowedEmailDomain("someone@gmail.com")).toBe(false);
+	});
+
 	it("rejects malformed input instead of throwing", () => {
 		delete process.env.ALLOWED_EMAIL_DOMAINS;
 		jest.resetModules();
