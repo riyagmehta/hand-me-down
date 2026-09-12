@@ -30,6 +30,8 @@ const UserSchema = mongoose.Schema({
 	// derived from this plus the current date in lib/academic.js, so it
 	// can't go stale the way a stored label would.
 	graduationYear: { type: Number },
+	major: { type: String },
+	courses: [String],
 
 	// address
 	address: {

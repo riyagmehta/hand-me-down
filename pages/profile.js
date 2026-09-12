@@ -35,11 +35,24 @@ const Profile = (props) => {
 		for (const field in user) {
 			setValue(field, user[field]);
 		}
+		if (Array.isArray(user.courses)) {
+			setValue("coursesText", user.courses.join(", "));
+		}
 	});
 
 	const handleLogin = async (filledData) => {
+		const { coursesText, ...rest } = filledData;
+		const dataToSend = {
+			...rest,
+			courses: coursesText
+				? coursesText
+						.split(",")
+						.map((course) => course.trim())
+						.filter(Boolean)
+				: [],
+		};
 		let formData = new FormData();
-		formData.append("user", JSON.stringify(filledData));
+		formData.append("user", JSON.stringify(dataToSend));
 		if (acceptedFiles.length == 1) {
 			formData.append("avatar", acceptedFiles[0]);
 		}
@@ -193,6 +206,28 @@ const Profile = (props) => {
 							register={register}
 							isRequired={true}
 							title={"Complete Address"}
+						/>
+
+						<FormInputField
+							name={"graduationYear"}
+							errors={errors}
+							register={register}
+							title={"Graduation Year"}
+							type={"number"}
+						/>
+
+						<FormInputField
+							name={"major"}
+							errors={errors}
+							register={register}
+							title={"Major"}
+						/>
+
+						<FormInputField
+							name={"coursesText"}
+							errors={errors}
+							register={register}
+							title={"Courses (comma-separated, e.g. CS 301, MATH 201)"}
 						/>
 
 						<button

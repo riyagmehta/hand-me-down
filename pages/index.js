@@ -12,9 +12,17 @@ import Link from "next/link";
 
 export default function Home(props) {
 	const [products, setProducts] = useState([]);
+	const [recommended, setRecommended] = useState([]);
 	const [filter, setFilter] = useState({ keyword: "" });
 	useEffect(() => {
 		setProducts(props.data);
+	}, []);
+
+	useEffect(() => {
+		axiosInstance
+			.get("/api/products/recommended")
+			.then(({ data }) => setRecommended(data.data || []))
+			.catch(() => setRecommended([]));
 	}, []);
 
 	const fetchProducts = async (filter) => {
@@ -59,6 +67,19 @@ export default function Home(props) {
 					</div>
 				</div>
 			</div>
+
+			{recommended.length > 0 && (
+				<>
+					<p className="text-3xl text-blue-600 mx-5 mt-7 text-center">
+						Recommended for you
+					</p>
+					<div className="md:flex md:flex-row justify-center flex-wrap lg:mx-52">
+						{recommended.map((product) => {
+							return <ProductCard {...product} key={product._id} />;
+						})}
+					</div>
+				</>
+			)}
 
 			<p className="text-5xl text-blue-600 mx-5 mt-7 text-center">
 				Explore products{" "}
