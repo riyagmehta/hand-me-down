@@ -158,6 +158,19 @@ decremented it before this.
   set.) A product locks out of individual sale while bundled
   (`Product.bundledIn`), checked in the single-item checkout path too.
 
+### Junior-senior matching
+
+`GET /api/products/recommended` ranks active listings for the signed-in
+viewer via weighted tag-overlap scoring (`lib/matching.js`): exact course
+match > same major > graduating senior > recency (a decaying tie-breaker).
+Deliberately not a graph/PageRank model over a students-courses-listings
+graph -- at this data density the signal that matters is already a direct
+edge (shared course/major tag), and a graph approach has a *worse*
+cold-start story (zero edges for a new user) while adding real
+infrastructure to build and keep in sync. A viewer with no major/courses
+set, or a listing with no course code, degenerates gracefully to a
+senior-boosted recency feed rather than scoring everything zero.
+
 ### Tests
 
 Controller tests spin up a real in-memory MongoDB per test file
