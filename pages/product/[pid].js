@@ -7,11 +7,7 @@ import Navbar from "../../components/Navbar";
 import "react-responsive-carousel/lib/styles/carousel.min.css"; // requires a loader
 import { Carousel } from "react-responsive-carousel";
 import { useRouter } from "next/router";
-import getUser from "../../lib/getUser";
-import { verify } from "jsonwebtoken";
-import { getCookie, getCookies } from "cookies-next";
 import { ToastContainer, toast } from "react-toastify";
-import verifyJWT from "../../lib/verifyJWT";
 import { AiOutlineMail, AiOutlinePhone, AiOutlineUser } from "react-icons/ai";
 const ProductView = (props) => {
 	const [product, setProduct] = useState(props.product);
@@ -20,11 +16,10 @@ const ProductView = (props) => {
 	console.log("seller >> ", props.seller);
 
 	useEffect(() => {
-		// setProduct(props.product);
-		// setSeller(props.seller);
-		const token = getCookie("token");
-		const decodedToken = verifyJWT(token);
-		setToken(decodedToken);
+		axiosInstance
+			.get("/api/auth/me")
+			.then(({ data }) => setToken({ uid: data.data._id }))
+			.catch(() => setToken(null));
 	}, []);
 
 	const router = useRouter();

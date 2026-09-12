@@ -57,7 +57,9 @@ export async function getServerSideProps({ req, res }) {
 	const decodedToken = verifyJWT(token);
 	if (decodedToken) {
 		const { uid } = decodedToken;
-		const { data } = await axiosInstance.get(`/api/users/${uid}/wishlist`);
+		const { data } = await axiosInstance.get(`/api/users/${uid}/wishlist`, {
+			headers: { cookie: req.headers.cookie },
+		});
 		return {
 			props: { data, uid },
 		};

@@ -198,7 +198,7 @@ export async function getServerSideProps({ req, res, params }) {
 	const { sid, pid } = params;
 	const decodedToken = verifyJWT(token);
 
-	if (sid == decodedToken.uid) {
+	if (decodedToken && sid == decodedToken.uid) {
 		const { data } = await axiosInstance.get(`/api/products/${pid}`);
 		return {
 			props: data.data,
